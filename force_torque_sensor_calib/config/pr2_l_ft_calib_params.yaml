@@ -5,16 +5,16 @@ loop_rate: 1000.0
 wait_time: 4.0
 
 # Name of the moveit group
-moveit_group_name: 'right_arm'
+moveit_group_name: 'left_arm'
 
 # Name of the calib file
-calib_file_name: 'r_ft_calib_data.yaml'
+calib_file_name: 'l_ft_calib_data.yaml'
 
 # Name of the directory
 calib_file_dir: '~/.ros/ft_calib'
 
 # Name of file to store measurements
-meas_file_name: 'r_ft_calib_meas.txt'
+meas_file_name: 'l_ft_calib_meas.txt'
 
 # Name of the directory
 meas_file_dir: '~/.ros/ft_calib'
@@ -24,6 +24,3 @@ random_poses: true
 
 # number of random poses
 number_random_poses: 50
-
-# ft sensor frame
-ft_sensor_frame_id: 'r_force_torque_link'

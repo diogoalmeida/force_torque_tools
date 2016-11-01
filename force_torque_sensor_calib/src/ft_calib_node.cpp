@@ -150,20 +150,27 @@ public:
 
         // Get the name of directory to save gravity and force-torque measurements
         if(n_.hasParam("meas_file_dir"))
-		{
-            n_.getParam("meas_file_dir", m_meas_file_dir);
-		}
+				{
+		            n_.getParam("meas_file_dir", m_meas_file_dir);
+				}
 
-		else
-		{
-            ROS_WARN("No meas_file_dir parameter, setting to default '~/.ros/ft_calib' ");
-            m_meas_file_dir = std::string("~/.ros/ft_calib");
-		}
+				else
+				{
+		            ROS_WARN("No meas_file_dir parameter, setting to default '~/.ros/ft_calib' ");
+		            m_meas_file_dir = std::string("~/.ros/ft_calib");
+				}
 
-		if(n_.hasParam("poses_frame_id"))
-		{
-			n_.getParam("poses_frame_id", m_poses_frame_id);
-		}
+				if(!n_.getParam("ft_sensor_frame_id", m_ft_sensor_frame_id))
+				{
+					ROS_ERROR("No ft_sensor_frame_id parameter, shutting down node ...");
+					n_.shutdown();
+					return false;
+				}
+
+				if(n_.hasParam("poses_frame_id"))
+				{
+					n_.getParam("poses_frame_id", m_poses_frame_id);
+				}
 
         else
         {
@@ -381,6 +388,7 @@ public:
 	{
 		ROS_DEBUG("In ft sensorcallback");
 		m_ft_raw = *msg;
+		m_ft_raw.header.frame_id = m_ft_sensor_frame_id;
 		m_received_ft = true;
 	}
 
@@ -532,15 +540,18 @@ private:
 	// default: ~/.ros/ft_calib
 	std::string m_calib_file_dir;
 
-    // name of file with recorded gravity and F/T measurements
-    std::string m_meas_file_name;
+  // name of file with recorded gravity and F/T measurements
+  std::string m_meas_file_name;
 
-    // name of directory for saving gravity and F/T measurements
-    // default: ~/.ros/ft_calib
-    std::string m_meas_file_dir;
+  // name of directory for saving gravity and F/T measurements
+  // default: ~/.ros/ft_calib
+  std::string m_meas_file_dir;
 
 	// frame id of the poses to be executed
 	std::string m_poses_frame_id;
+
+	// frame of the force torque measurements
+	std::string m_ft_sensor_frame_id;
 
 	// if the user wants to execute just random poses
 	// default: false
