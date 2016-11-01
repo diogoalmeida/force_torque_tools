@@ -8,6 +8,7 @@
   <arg name="loop_rate" default="1000.0"/>
   <arg name="ns" default="/ft_sensor"/>
   <arg name="gripper_com_child_frame_id" default="gripper_com"/>
+  <arg name="ft_frame_id" default="ft_frame"/>
 
   <node name="$(arg node_name)" pkg="gravity_compensation" type="gravity_compensation_node" cwd="node" respawn="false" output="screen">
     <rosparam command="load" file="$(arg calib_data_file)"/>
@@ -15,6 +16,7 @@
     <remap from="$(arg node_name)/imu" to="$(arg imu)" />
     <param name="loop_rate" value="$(arg loop_rate)" />
     <param name="ns" value="$(arg ns)"/>
+    <param name="ft_frame_id" value="$(arg ft_frame_id)"/>
     <param name="gripper_com_child_frame_id" value="$(arg gripper_com_child_frame_id)"/>
   </node>
 

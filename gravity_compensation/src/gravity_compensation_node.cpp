@@ -58,7 +58,7 @@ public:
 	ros::Publisher topicPub_ft_zeroed_;
 	ros::Publisher topicPub_ft_compensated_;
 
-    ros::ServiceServer calibrate_bias_srv_server_;
+  ros::ServiceServer calibrate_bias_srv_server_;
 
 	tf::TransformBroadcaster tf_br_;
 
@@ -69,16 +69,16 @@ public:
 		m_g_comp_params  = new GravityCompensationParams();
 		m_g_comp = NULL;
 		m_received_imu = false;
-        m_calibrate_bias = false;
-        m_calib_measurements = 0;
-        m_ft_bias = Eigen::Matrix<double, 6, 1>::Zero();
+    m_calibrate_bias = false;
+    m_calib_measurements = 0;
+    m_ft_bias = Eigen::Matrix<double, 6, 1>::Zero();
 
 		// subscribe to accelerometer topic and raw F/T sensor topic
 		topicSub_imu_ = n_.subscribe("imu", 1, &GravityCompensationNode::topicCallback_imu, this);
 		topicSub_ft_raw_ = n_.subscribe("ft_raw", 1, &GravityCompensationNode::topicCallback_ft_raw, this);
 
-        // bias calibration service
-        calibrate_bias_srv_server_ = n_.advertiseService("calibrate_bias", &GravityCompensationNode::calibrateBiasSrvCallback, this);
+    // bias calibration service
+    calibrate_bias_srv_server_ = n_.advertiseService("calibrate_bias", &GravityCompensationNode::calibrateBiasSrvCallback, this);
 
 		/// implementation of topics to publish
 		std::string ns;
@@ -179,10 +179,16 @@ public:
 		{
 			n_.getParam("gripper_com_child_frame_id", gripper_com_child_frame_id);
 		}
-
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_com_child_frame_id' not available");
+			n_.shutdown();
+			return false;
+		}
+
+		if(!n_.getParam("ft_frame_id", m_ft_frame_id))
+		{
+			ROS_ERROR("Parameter ft_frame_id not availabel, shutting down...");
 			n_.shutdown();
 			return false;
 		}
@@ -251,6 +257,8 @@ public:
 	void topicCallback_ft_raw(const geometry_msgs::WrenchStamped::ConstPtr &msg)
 	{
 		static int error_msg_count=0;
+		geometry_msgs::WrenchStamped ft_with_frame = *msg;
+		ft_with_frame.header.frame_id = m_ft_frame_id;
 
 		if(!m_received_imu)
 		{
@@ -266,7 +274,7 @@ public:
 		}
 
 		geometry_msgs::WrenchStamped ft_zeroed;
-		m_g_comp->Zero(*msg, ft_zeroed);
+		m_g_comp->Zero(ft_with_frame, ft_zeroed);
 		topicPub_ft_zeroed_.publish(ft_zeroed);
 
 		geometry_msgs::WrenchStamped ft_compensated;
@@ -338,9 +346,11 @@ private:
 	bool m_received_imu;
 	double m_gripper_com_broadcast_frequency;
 
-    bool m_calibrate_bias;
-    unsigned int m_calib_measurements;
-    Eigen::Matrix<double, 6, 1> m_ft_bias;
+  bool m_calibrate_bias;
+  unsigned int m_calib_measurements;
+  Eigen::Matrix<double, 6, 1> m_ft_bias;
+
+	std::string m_ft_frame_id;
 
 };
 
@@ -378,4 +388,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-
