@@ -7,7 +7,7 @@
   <arg name="imu" default="/torso_lift_imu/data"/>
   <arg name="loop_rate" default="1000.0"/>
   <arg name="ns" default="/ft_sensor"/>
-  <arg name="gripper_com_child_frame_id" default="l_force_torque_link"/>
+  <arg name="gripper_com_child_frame_id" default="gripper_com"/>
   <arg name="ft_frame_id" default="l_force_torque_link"/>
 
   <node name="$(arg node_name)" pkg="gravity_compensation" type="gravity_compensation_node" cwd="node" respawn="false" output="screen">
