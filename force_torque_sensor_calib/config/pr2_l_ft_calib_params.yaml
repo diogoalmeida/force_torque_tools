@@ -27,3 +27,5 @@ number_random_poses: 50
 
 # ft sensor frame
 ft_sensor_frame_id: 'l_force_torque_link'
+
+poses_frame_id: 'l_gripper_tool_frame'
