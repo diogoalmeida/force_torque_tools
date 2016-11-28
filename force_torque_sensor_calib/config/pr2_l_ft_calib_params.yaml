@@ -24,3 +24,6 @@ random_poses: true
 
 # number of random poses
 number_random_poses: 50
+
+# ft sensor frame
+ft_sensor_frame_id: 'l_force_torque_link'
