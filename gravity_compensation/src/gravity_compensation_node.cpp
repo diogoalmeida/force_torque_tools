@@ -278,6 +278,7 @@ public:
 		topicPub_ft_zeroed_.publish(ft_zeroed);
 
 		geometry_msgs::WrenchStamped ft_compensated;
+    ft_compensated = ft_zeroed;
 		// m_g_comp->Compensate(ft_zeroed, m_imu, ft_compensated);
 
         if(m_calibrate_bias)
