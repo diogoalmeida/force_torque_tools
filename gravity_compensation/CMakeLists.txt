@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(gravity_compensation)
 
+add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS cmake_modules roscpp geometry_msgs sensor_msgs tf tf_conversions eigen_conversions)
 
