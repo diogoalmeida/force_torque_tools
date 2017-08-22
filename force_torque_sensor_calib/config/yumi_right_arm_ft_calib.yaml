@@ -1,0 +1,31 @@
+# main loop frequency [Hz] (should be as fast as F/T sensor publish frequency)
+loop_rate: 200.0
+
+# waiting time after moving to each pose before taking F/T measurements
+wait_time: 4.0
+
+# Name of the moveit group
+moveit_group_name: 'right_arm'
+
+# Name of the calib file
+calib_file_name: 'r_ft_calib_data.yaml'
+
+# Name of the directory
+calib_file_dir: '~/.ros/ft_calib'
+
+# Name of file to store measurements
+meas_file_name: 'r_ft_calib_meas.txt'
+
+# Name of the directory
+meas_file_dir: '~/.ros/ft_calib'
+
+# don't execute random poses
+random_poses: true
+
+# number of random poses
+number_random_poses: 30
+
+# the poses to which to move the arm in order to calibrate the F/T sensor
+# format: [x y z r p y]  in meters, radians
+# poses_frame_id sets the frame at which the poses are expressed
+# poses_frame_id: 'yumi_base_link'
