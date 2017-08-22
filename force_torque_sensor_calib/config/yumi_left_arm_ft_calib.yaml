@@ -28,4 +28,4 @@ number_random_poses: 30
 # the poses to which to move the arm in order to calibrate the F/T sensor
 # format: [x y z r p y]  in meters, radians
 # poses_frame_id sets the frame at which the poses are expressed
-# poses_frame_id: 'yumi_base_link'
+poses_frame_id: 'yumi_base_link'
