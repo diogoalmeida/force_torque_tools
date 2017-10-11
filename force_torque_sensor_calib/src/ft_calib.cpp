@@ -99,7 +99,7 @@ Eigen::MatrixXd FTCalib::getMeasurementMatrix(const geometry_msgs::Vector3Stampe
   gravity << gravity_geo.vector.x, gravity_geo.vector.y, gravity_geo.vector.z;
   
   H.block<3,1>(0,0) = -gravity;
-  H.block<3,3>(3,3) << 0, -gravity[2], gravity[1],
+  H.block<3,3>(3,1) << 0, -gravity[2], gravity[1],
                        gravity[2], 0, -gravity[0],
                        -gravity[1], gravity[0], 0;
                        
