@@ -600,7 +600,7 @@ int main(int argc, char **argv)
 			ret = ft_calib_node.moveNextPose();
 			t_end_move_arm = ros::Time::now();
 		}
-
+    sleep(1.0);
 		// average 100 measurements to calibrate the sensor in each position
 		else if ((ros::Time::now() - t_end_move_arm).toSec() > wait_time)
 		{
