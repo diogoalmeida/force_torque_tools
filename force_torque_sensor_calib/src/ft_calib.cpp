@@ -45,7 +45,7 @@ FTCalib::FTCalib()
 {
 	m_num_meas = 0;
   Sigma = Eigen::Matrix<double, 6, 6>::Identity();
-  Lambda = Eigen::Matrix<double, 6, 6>::Identity();
+  Lambda = 0.1*Eigen::Matrix<double, 6, 6>::Identity();
   phi = Eigen::Matrix<double, 4, 1>::Zero();
 }
 
@@ -102,6 +102,10 @@ Eigen::MatrixXd FTCalib::getMeasurementMatrix(const geometry_msgs::Vector3Stampe
   H.block<3,3>(1,1) << 0, -gravity[2], gravity[1],
                        gravity[2], 0, -gravity[0],
                        -gravity[1], gravity[0], 0;
+                       
+  std::cout << "Measurement Matrix" << std::endl;
+  std::cout << H << std::endl << std::endl;                     
+  
 	return H;
 }
 
