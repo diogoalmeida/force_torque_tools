@@ -43,15 +43,10 @@ namespace Calibration{
 
 FTCalib::FTCalib()
 {
-	m_num_meas = 0;
-  Sigma = Eigen::Matrix<double, 6, 6>::Identity();
-  Lambda = 0.1*Eigen::Matrix<double, 6, 6>::Identity();
-  phi = Eigen::Matrix<double, 4, 1>::Zero();
+  phi = Eigen::Matrix<double, 10, 1>::Zero();
 }
 
-FTCalib::~FTCalib(){
-
-}
+FTCalib::~FTCalib(){}
 
 void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 		const geometry_msgs::WrenchStamped &ft_raw)
@@ -63,10 +58,8 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 		return;
 	}
 
-	m_num_meas++;
-
   Eigen::MatrixXd H = getMeasurementMatrix(gravity);
-  Eigen::Matrix<double, 6, 6> K, I = Eigen::Matrix<double, 6, 6>::Identity(), P_hat, S;
+  Eigen::Matrix<double, 10, 10> K, I = Eigen::Matrix<double, 10, 10>::Identity(), P_hat, S;
 	Eigen::VectorXd z = Eigen::Matrix<double, 6, 1>::Zero(), innov;
 	z(0) = ft_raw.wrench.force.x;
 	z(1) = ft_raw.wrench.force.y;
@@ -75,16 +68,16 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 	z(3) = ft_raw.wrench.torque.x;
 	z(4) = ft_raw.wrench.torque.y;
 	z(5) = ft_raw.wrench.torque.z;
-  
-  
+
+
   // process model
-  P_hat = 0.01*Eigen::Matrix<double, 6, 6>::Identity();
+  P_hat = 0.01*I;
   innov = z - H*phi;
-  S = H*P_hat.selfadjointView<Eigen::Upper>()*H.transpose() + Lambda;
+  S = H*P_hat.selfadjointView<Eigen::Upper>()*H.transpose() + 10*I;
 
   K = P_hat.selfadjointView<Eigen::Upper>()*H.transpose()*S.llt().solve(I);
   phi = phi + K*innov;
-  
+
   std::cout << "---------------------------------" << std::endl;
   std::cout << "z: " << z.transpose() << std::endl;
   std::cout << "phi: " << phi.transpose() << std::endl;
@@ -103,20 +96,22 @@ Eigen::VectorXd FTCalib::getCalib()
 Eigen::MatrixXd FTCalib::getMeasurementMatrix(const geometry_msgs::Vector3Stamped &gravity_geo)
 {
   Eigen::Vector3d gravity;
-	
+
 	Eigen::MatrixXd H;
-	H = Eigen::Matrix<double, 6, 4>::Zero();
+	H = Eigen::Matrix<double, 6, 10>::Zero();
 
   gravity << gravity_geo.vector.x, gravity_geo.vector.y, gravity_geo.vector.z;
-  
+
   H.block<3,1>(0,0) = -gravity;
   H.block<3,3>(3,1) << 0, -gravity[2], gravity[1],
                        gravity[2], 0, -gravity[0],
                        -gravity[1], gravity[0], 0;
-                       
+
+	H.block<6,6>(0,4) = Eigen::Matrix<double, 6, 6>::Identity();
+
   std::cout << "Measurement Matrix" << std::endl;
-  std::cout << H << std::endl << std::endl;                     
-  
+  std::cout << H << std::endl << std::endl;
+
 	return H;
 }
 
