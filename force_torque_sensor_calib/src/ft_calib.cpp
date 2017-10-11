@@ -66,8 +66,8 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 	m_num_meas++;
 
   Eigen::MatrixXd h = getMeasurementMatrix(gravity);
-  Eigen::Matrix<double, 6, 6> K, I = Eigen::Matrix<double, 6, 6>::Identity();
-	Eigen::VectorXd z = Eigen::Matrix<double, 6, 1>::Zero();
+  Eigen::Matrix<double, 6, 6> K, I = Eigen::Matrix<double, 6, 6>::Identity(), P_hat, S;
+	Eigen::VectorXd z = Eigen::Matrix<double, 6, 1>::Zero(), innov;
 	z(0) = ft_raw.wrench.force.x;
 	z(1) = ft_raw.wrench.force.y;
 	z(2) = ft_raw.wrench.force.z;
@@ -76,9 +76,13 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 	z(4) = ft_raw.wrench.torque.y;
 	z(5) = ft_raw.wrench.torque.z;
   
-  K = Sigma*h.transpose()*(h*Sigma*h.transpose() + Lambda).jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(I);
-  Sigma = (I - K*h)*Sigma;
-  phi = phi + K*(z - h*phi);
+  // process model
+  P_hat = 0.01*Eigen::Matrix<double, 6, 6>::Identity();
+  innov = z - h*phi;
+  S = h*P_hat.selfadjointView<Eigen::Upper>()*h.transpose() + Lambda;
+
+  K = P_hat.selfadjointView<Eigen::Upper>()*h.transpose()*S.llt().solve(I);
+  phi = phi + K*innov;
 }
 
 
