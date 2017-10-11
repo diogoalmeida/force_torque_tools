@@ -65,7 +65,7 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 
 	m_num_meas++;
 
-  Eigen::MatrixXd h = getMeasurementMatrix(gravity);
+  Eigen::MatrixXd H = getMeasurementMatrix(gravity);
   Eigen::Matrix<double, 6, 6> K, I = Eigen::Matrix<double, 6, 6>::Identity(), P_hat, S;
 	Eigen::VectorXd z = Eigen::Matrix<double, 6, 1>::Zero(), innov;
 	z(0) = ft_raw.wrench.force.x;
@@ -76,13 +76,20 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 	z(4) = ft_raw.wrench.torque.y;
 	z(5) = ft_raw.wrench.torque.z;
   
+  
   // process model
   P_hat = 0.01*Eigen::Matrix<double, 6, 6>::Identity();
-  innov = z - h*phi;
-  S = h*P_hat.selfadjointView<Eigen::Upper>()*h.transpose() + Lambda;
+  innov = z - H*phi;
+  S = H*P_hat.selfadjointView<Eigen::Upper>()*H.transpose() + Lambda;
 
-  K = P_hat.selfadjointView<Eigen::Upper>()*h.transpose()*S.llt().solve(I);
+  K = P_hat.selfadjointView<Eigen::Upper>()*H.transpose()*S.llt().solve(I);
   phi = phi + K*innov;
+  
+  std::cout << "---------------------------------" << std::endl;
+  std::cout << "z: " << z.transpose() << std::endl;
+  std::cout << "phi: " << phi.transpose() << std::endl;
+  std::cout << "K: " << std::endl << K << std::endl;
+  std::cout << "---------------------------------" << std::endl;
 }
 
 

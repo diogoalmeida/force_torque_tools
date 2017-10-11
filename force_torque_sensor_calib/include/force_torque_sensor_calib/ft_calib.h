@@ -85,8 +85,8 @@ protected:
   
   Eigen::MatrixXd Sigma, Lambda;
   Eigen::VectorXd phi;
-	Eigen::MatrixXd H; // stacked measurement matrices
-	Eigen::VectorXd Z; // stacked F/T measurements
+	// Eigen::MatrixXd H; // stacked measurement matrices
+	// Eigen::VectorXd Z; // stacked F/T measurements
 	// FT_sensor_frame_acc taken as 0
 
 	unsigned int m_num_meas; // number of stacked measurements;
