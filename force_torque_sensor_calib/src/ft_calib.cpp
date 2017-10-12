@@ -75,12 +75,13 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
   innov = z - H*phi;
   S = H*P_hat.selfadjointView<Eigen::Upper>()*H.transpose() + 10*I;
 
-  K = P_hat.selfadjointView<Eigen::Upper>()*H.transpose()*S.llt().solve(I);
+  K = P_hat.selfadjointView<Eigen::Upper>()*H.transpose()*S.colPivHouseholderQr().solve(I);
   phi = phi + K*innov;
 
   std::cout << "---------------------------------" << std::endl;
   std::cout << "z: " << z.transpose() << std::endl;
   std::cout << "phi: " << phi.transpose() << std::endl;
+  std::cout << "S: " << std::endl << S << std::endl;
   std::cout << "K: " << std::endl << K << std::endl;
   std::cout << "---------------------------------" << std::endl;
 }
