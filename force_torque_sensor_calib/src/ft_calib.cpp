@@ -111,7 +111,7 @@ Eigen::MatrixXd FTCalib::getMeasurementMatrix(const geometry_msgs::Vector3Stampe
 	H.block<6,6>(0,4) = Eigen::Matrix<double, 6, 6>::Identity();
 
   std::cout << "Measurement Matrix" << std::endl;
-  std::cout << H << std::endl << std::endl;
+  std::cout << H << "    Transpose:" << H.transpose() << std::endl << std::endl;
 
 	return H;
 }
