@@ -59,7 +59,9 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 	}
 
   Eigen::MatrixXd H = getMeasurementMatrix(gravity);
-  Eigen::Matrix<double, 10, 10> K, I = Eigen::Matrix<double, 10, 10>::Identity(), P_hat, S;
+  Eigen::Matrix<double, 10, 6> K;
+  Eigen::Matrix<double, 6, 6> S, I_six = Eigen::Matrix<double, 6, 6>::Identity();
+  Eigen::Matrix<double, 10, 10> P_hat, I_ten = Eigen::Matrix<double, 10, 10>::Identity();
 	Eigen::VectorXd z = Eigen::Matrix<double, 6, 1>::Zero(), innov;
 	z(0) = ft_raw.wrench.force.x;
 	z(1) = ft_raw.wrench.force.y;
@@ -71,11 +73,11 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 
 
   // process model
-  P_hat = 0.01*I;
+  P_hat = 0.01*I_ten;
   innov = z - H*phi;
-  S = H*P_hat*H.transpose() + 10*I;
+  S = H*P_hat*H.transpose() + 10*I_six;
 
-  K = P_hat*H.transpose()*S.colPivHouseholderQr().solve(I);
+  K = P_hat*H.transpose()*S.colPivHouseholderQr().solve(I_six);
   phi = phi + K*innov;
 
   std::cout << "---------------------------------" << std::endl;
