@@ -470,19 +470,19 @@ public:
 
 		COM_pos = center_mass_position;
 
-		// f_bias(0) = -ft_calib(4);
-		// f_bias(1) = -ft_calib(5);
-		// f_bias(2) = -ft_calib(6);
-		// t_bias(0) = -ft_calib(7);
-		// t_bias(1) = -ft_calib(8);
-		// t_bias(2) = -ft_calib(9);
+		f_bias(0) = -ft_calib(4);
+		f_bias(1) = -ft_calib(5);
+		f_bias(2) = -ft_calib(6);
+		t_bias(0) = -ft_calib(7);
+		t_bias(1) = -ft_calib(8);
+		t_bias(2) = -ft_calib(9);
     
-    f_bias(0) = 0;
-		f_bias(1) = 0;
-		f_bias(2) = 0;
-		t_bias(0) = 0;
-		t_bias(1) = 0;
-		t_bias(2) = 0;
+    // f_bias(0) = 0;
+		// f_bias(1) = 0;
+		// f_bias(2) = 0;
+		// t_bias(0) = 0;
+		// t_bias(1) = 0;
+		// t_bias(2) = 0;
 
 	}
 
