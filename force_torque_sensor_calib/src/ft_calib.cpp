@@ -73,9 +73,9 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
   // process model
   P_hat = 0.01*I;
   innov = z - H*phi;
-  S = H*P_hat.selfadjointView<Eigen::Upper>()*H.transpose() + 10*I;
+  S = H*P_hat*H.transpose() + 10*I;
 
-  K = P_hat.selfadjointView<Eigen::Upper>()*H.transpose()*S.colPivHouseholderQr().solve(I);
+  K = P_hat*H.transpose()*S.colPivHouseholderQr().solve(I);
   phi = phi + K*innov;
 
   std::cout << "---------------------------------" << std::endl;
