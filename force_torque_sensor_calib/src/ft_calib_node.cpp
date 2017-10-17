@@ -288,6 +288,7 @@ public:
 				std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
 				std::uniform_real_distribution<> dis(-PI/3, PI/3);
 				pose(3) = dis(gen);
+				dis = std::uniform_real_distribution<>(-PI, PI);
 				pose(4) = dis(gen);
 				pose(5) = 0;
 
