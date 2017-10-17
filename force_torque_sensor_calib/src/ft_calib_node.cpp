@@ -36,6 +36,7 @@
 #include <ros/ros.h>
 #include <iostream>
 #include <fstream>
+#include <random>
 #include <sstream>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
@@ -50,6 +51,8 @@
 #include <Eigen/Core>
 
 using namespace Calibration;
+
+#define PI 3.141592653589793238463
 
 
 class FTCalibNode
@@ -174,7 +177,10 @@ public:
 
 
         // whether the user wants to use random poses
-        n_.param("random_poses", m_random_poses, false);
+		// n_.param("random_poses", m_random_poses, false);
+		
+		// operation mode
+		n_.param("operation_mode", op_mode, MANUAL_POSITIONING);
 
         // number of random poses
         n_.param("number_random_poses", m_number_random_poses, 30);
@@ -230,8 +236,10 @@ public:
 		// either find poses from the parameter server
 		// poses should be in "pose%d" format (e.g. pose0, pose1, pose2 ...)
 		// and they should be float arrays of size 6
-		if(!m_random_poses)
+		// if(!m_random_poses)
+		if(op_mode == PREDEFINED_POSES)
 		{
+			ROS_INFO("PREDEFINED_POSE");
 			if(!getPose("pose"+ss.str(), pose))
 			{
 				ROS_INFO("Finished group %s poses", m_group->getName().c_str());
@@ -252,19 +260,51 @@ public:
 			geometry_msgs::PoseStamped pose_stamped;
 			pose_stamped.pose = pose_;
 			pose_stamped.header.frame_id = m_poses_frame_id;
-			pose_stamped.header.stamp = ros::Time::now();
+			pose_stamped.header.stamp = ros::Time(0);
 
 			m_group->setPoseTarget(pose_stamped);
 
 		}
-		else // or execute random poses
+		else if(op_mode == RANDOM_POSES) // or execute random poses
 		{
+			ROS_INFO("RANDOM_POSE");
 			if(m_pose_counter<m_number_random_poses)
 			{
-				m_group->setRandomTarget();
+				if(!getPose("pose_base", pose))
+				{
+					ROS_INFO("Base pose not found for move group %s", m_group->getName().c_str());
+					m_finished = true;
+					return false;
+				}
+
+				// srand(time(NULL));
+				geometry_msgs::Pose pose_;
+				pose_.position.x = pose(0);
+				pose_.position.y = pose(1);
+				pose_.position.z = pose(2);
+
+				tf::Quaternion q;
+				std::random_device rd;  //Will be used to obtain a seed for the random number engine
+				std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+				std::uniform_real_distribution<> dis(-PI/3, PI/3);
+				pose(3) = dis(gen);
+				pose(4) = dis(gen);
+				pose(5) = 0;
+
+				q.setRPY((double)pose(3), (double)pose(4), (double)pose(5));
+	
+				tf::quaternionTFToMsg(q, pose_.orientation);
+	
+				geometry_msgs::PoseStamped pose_stamped;
+				pose_stamped.pose = pose_;
+				pose_stamped.header.frame_id = m_poses_frame_id;
+				pose_stamped.header.stamp = ros::Time(0);
+	
+				m_group->setPoseTarget(pose_stamped);
+
+				// m_group->setRandomTarget();
 				ROS_INFO("Executing pose %d",m_pose_counter);
 			}
-
 			else
 			{
 				ROS_INFO("Finished group %s random poses", m_group->getName().c_str());
@@ -272,8 +312,16 @@ public:
 				return true;
 			}
 		}
+		// else
+		// {
+		// 	ROS_INFO("MANUAL_POSITIONING");
+		// 	ROS_INFO("Finished group %s manually set poses", m_group->getName().c_str());
+		// 	m_finished = true;
+		// 	return true;
+		// }
 
-
+		ROS_INFO("EE goal position = (%f, %f, %f)", pose(0), pose(1), pose(2));
+		ROS_INFO("EE goal orientation = (%f, %f, %f)", pose(3), pose(4), pose(5));
 		m_pose_counter++;
 		m_group->move();
 		ROS_INFO("Finished executing pose %d", m_pose_counter-1);
@@ -544,7 +592,14 @@ private:
 
 	// if the user wants to execute just random poses
 	// default: false
-	bool m_random_poses;
+	// bool m_random_poses;
+
+	const int PREDEFINED_POSES = 1;
+	const int RANDOM_POSES = 2;
+	const int MANUAL_POSITIONING = 3;
+
+	// operation mode choice. Either
+	int op_mode = MANUAL_POSITIONING;
 
 	// number of random poses
 	// default: 30
@@ -578,16 +633,17 @@ int main(int argc, char **argv)
 	bool ret = false;
 	unsigned int n_measurements = 0;
 
-	ros::Time t_end_move_arm = ros::Time::now();
+	ros::Time t_end_move_arm = ros::Time(0);
 
 	while (ft_calib_node.n_.ok() && !ft_calib_node.finished())
 	{
 
-		//		Move the arm, then calibrate sensor
+		// Move the arm, then calibrate sensor
 		if(!ret)
 		{
 			ret = ft_calib_node.moveNextPose();
-			t_end_move_arm = ros::Time::now();
+			t_end_move_arm = ros::Time(0);
+			sleep(wait_time);
 		}
 
 		// average 100 measurements to calibrate the sensor in each position
