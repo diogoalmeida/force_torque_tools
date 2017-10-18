@@ -216,7 +216,7 @@ public:
 				(double)gripper_com_pose(5));
 
 		gripper_com = tf::StampedTransform(tf::Transform(q, p),
-				ros::Time::now(),
+				ros::Time(0),
 				gripper_com_frame_id,
 				gripper_com_child_frame_id);
 
@@ -248,7 +248,7 @@ public:
 			return;
 		}
 
-		if((ros::Time::now()-m_imu.header.stamp).toSec() > 0.1)
+		if((ros::Time(0)-m_imu.header.stamp).toSec() > 0.1)
 		{
 			error_msg_count++;
 			if(error_msg_count % 10==0)
@@ -274,7 +274,7 @@ public:
 			while(ros::ok())
 			{
 				tf::StampedTransform gripper_com = m_g_comp_params->getGripperCOM();
-				gripper_com.stamp_ = ros::Time::now();
+				gripper_com.stamp_ = ros::Time(0);
 				tf_br_.sendTransform(gripper_com);
 
 				gripper_com_broadcast_rate.sleep();
