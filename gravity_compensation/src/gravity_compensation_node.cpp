@@ -1,5 +1,5 @@
 /*
- *  gravity_compensation_node.cpp
+ *  gravity_compensationhnode.cpp
  *
  *  Created on: Nov 12, 2013
  *  Authors:   Francisco Viña
@@ -48,7 +48,7 @@
 class GravityCompensationNode
 {
 public:
-	ros::NodeHandle n_;
+	ros::NodeHandle nh;
 
 	// subscribe to accelerometer (imu) readings
 	ros::Subscriber topicSub_imu_;
@@ -62,28 +62,31 @@ public:
 
 	GravityCompensationNode()
 	{
-		n_ = ros::NodeHandle("~");
+		nh = ros::NodeHandle("~");
 		m_g_comp_params  = new GravityCompensationParams();
 		m_g_comp = NULL;
 		m_received_imu = false;
 
 		// subscribe to accelerometer topic and raw F/T sensor topic
-		topicSub_imu_ = n_.subscribe("imu", 1, &GravityCompensationNode::topicCallback_imu, this);
-		topicSub_ft_raw_ = n_.subscribe("ft_raw", 1, &GravityCompensationNode::topicCallback_ft_raw, this);
+		topicSub_imu_ = nh.subscribe("imu", 1, &GravityCompensationNode::topicCallback_imu, this);
+		topicSub_ft_raw_ = nh.subscribe("ft_raw", 1, &GravityCompensationNode::topicCallback_ft_raw, this);
+
+		std::string topic_ft_zeroed, topic_ft_compensated;
+		nh.param("topic_ft_zeroed", topic_ft_zeroed, std::string("ft_zeroed"));
+		nh.param("topic_ft_compensated", topic_ft_compensated, std::string("ft_compensated"));
 
 		/// implementation of topics to publish
 		std::string ns;
-		if(n_.hasParam("ns"))
+		if(nh.hasParam("ns"))
 		{
-			n_.getParam("ns", ns);
-			topicPub_ft_zeroed_ = n_.advertise<geometry_msgs::WrenchStamped> (ns+std::string("/ft_zeroed"), 1);
-			topicPub_ft_compensated_ = n_.advertise<geometry_msgs::WrenchStamped> (ns+std::string("/ft_compensated"), 1);
+			nh.getParam("ns", ns);
+			topicPub_ft_zeroed_ = nh.advertise<geometry_msgs::WrenchStamped> (ns+topic_ft_zeroed, 1);
+			topicPub_ft_compensated_ = nh.advertise<geometry_msgs::WrenchStamped> (ns+topic_ft_compensated, 1);
 		}
-
 		else
 		{
-			topicPub_ft_zeroed_ = n_.advertise<geometry_msgs::WrenchStamped> ("ft_zeroed", 1);
-			topicPub_ft_compensated_ = n_.advertise<geometry_msgs::WrenchStamped> ("ft_compensated", 1);
+			topicPub_ft_zeroed_ = nh.advertise<geometry_msgs::WrenchStamped> (topic_ft_zeroed, 1);
+			topicPub_ft_compensated_ = nh.advertise<geometry_msgs::WrenchStamped> (topic_ft_compensated, 1);
 		}
 	}
 
@@ -98,15 +101,15 @@ public:
 		/// Get F/T sensor bias
 		XmlRpc::XmlRpcValue biasXmlRpc;
 		Eigen::Matrix<double, 6, 1> bias;
-		if (n_.hasParam("bias"))
+		if (nh.hasParam("bias"))
 		{
-			n_.getParam("bias", biasXmlRpc);
+			nh.getParam("bias", biasXmlRpc);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'bias' not set, shutting down node...");
-			n_.shutdown();
+			nh.shutdown();
 			return false;
 		}
 
@@ -114,7 +117,7 @@ public:
 		if(biasXmlRpc.size()!=6)
 		{
 			ROS_ERROR("Invalid F/T bias parameter size (should be size 6), shutting down node");
-			n_.shutdown();
+			nh.shutdown();
 			return false;
 		}
 
@@ -126,22 +129,22 @@ public:
 
 		// get the mass of the gripper
 		double gripper_mass;
-		if (n_.hasParam("gripper_mass"))
+		if (nh.hasParam("gripper_mass"))
 		{
-			n_.getParam("gripper_mass", gripper_mass);
+			nh.getParam("gripper_mass", gripper_mass);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_mass' not available");
-			n_.shutdown();
+			nh.shutdown();
 			return false;
 		}
 
 		if(gripper_mass<0.0)
 		{
 			ROS_ERROR("Parameter 'gripper_mass' < 0");
-			n_.shutdown();
+			nh.shutdown();
 			return false;
 		}
 
@@ -150,15 +153,15 @@ public:
 		// first get the frame ID
 		tf::StampedTransform gripper_com;
 		std::string gripper_com_frame_id;
-		if (n_.hasParam("gripper_com_frame_id"))
+		if (nh.hasParam("gripper_com_frame_id"))
 		{
-			n_.getParam("gripper_com_frame_id", gripper_com_frame_id);
+			nh.getParam("gripper_com_frame_id", gripper_com_frame_id);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_com_frame_id' not available");
-			n_.shutdown();
+			nh.shutdown();
 			return false;
 		}
 
@@ -166,15 +169,15 @@ public:
 
 		// now get the CHILD frame ID
 		std::string gripper_com_child_frame_id;
-		if (n_.hasParam("gripper_com_child_frame_id"))
+		if (nh.hasParam("gripper_com_child_frame_id"))
 		{
-			n_.getParam("gripper_com_child_frame_id", gripper_com_child_frame_id);
+			nh.getParam("gripper_com_child_frame_id", gripper_com_child_frame_id);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_com_child_frame_id' not available");
-			n_.shutdown();
+			nh.shutdown();
 			return false;
 		}
 
@@ -183,15 +186,15 @@ public:
 		// now get the actual gripper COM pose
 		Eigen::Matrix<double, 6, 1> gripper_com_pose;
 		XmlRpc::XmlRpcValue gripper_com_pose_XmlRpc;
-		if (n_.hasParam("gripper_com_pose"))
+		if (nh.hasParam("gripper_com_pose"))
 		{
-			n_.getParam("gripper_com_pose", gripper_com_pose_XmlRpc);
+			nh.getParam("gripper_com_pose", gripper_com_pose_XmlRpc);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_com_pose' not set, shutting down node...");
-			n_.shutdown();
+			nh.shutdown();
 			return false;
 		}
 
@@ -199,7 +202,7 @@ public:
 		if(gripper_com_pose_XmlRpc.size()!=6)
 		{
 			ROS_ERROR("Invalid 'gripper_com_pose' parameter size (should be size 6), shutting down node");
-			n_.shutdown();
+			nh.shutdown();
 			return false;
 		}
 
@@ -222,7 +225,7 @@ public:
 
 		// get the publish frequency for the gripper
 		// center of mass tf
-		n_.param("gripper_com_broadcast_frequency",
+		nh.param("gripper_com_broadcast_frequency",
 				m_gripper_com_broadcast_frequency, 100.0);
 
 		m_g_comp_params->setBias(bias);
@@ -245,6 +248,7 @@ public:
 
 		if(!m_received_imu)
 		{
+			ROS_ERROR("Haven't received IMU reading");
 			return;
 		}
 
@@ -299,7 +303,6 @@ private:
 
 int main(int argc, char **argv)
 {
-
 	ros::init(argc, argv, "gravity_compensation");
 	GravityCompensationNode g_comp_node;
 
@@ -311,14 +314,11 @@ int main(int argc, char **argv)
 
 	// loop frequency
 	double loop_rate_;
-	g_comp_node.n_.param("loop_rate", loop_rate_, 1000.0);
+	g_comp_node.nh.param("loop_rate", loop_rate_, 1000.0);
 	ros::Rate loop_rate(loop_rate_);
 
 	// add a thread for publishing the gripper COM transform frame
 	boost::thread t_tf(boost::bind(&GravityCompensationNode::publish_gripper_com_tf, &g_comp_node));
-
-//	ros::AsyncSpinner s(2);
-//	s.start();
 
 	while(ros::ok())
 	{

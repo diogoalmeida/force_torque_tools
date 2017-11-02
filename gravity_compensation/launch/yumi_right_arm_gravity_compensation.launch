@@ -3,11 +3,13 @@
 
   <arg name="node_name" default="yumi_right_arm_gravity_comp"/>
   <arg name="calib_data_file" default="$(env HOME)/.ros/ft_calib/r_ft_calib_data.yaml"/>
-  <arg name="ft_raw" default="/yumi/right_etherdaq_node/right_arm_ethdaq_data"/>
+  <arg name="ft_raw" default="/yumi/optodaq_r"/>
   <arg name="imu" default="/imu/data"/>
   <arg name="loop_rate" default="200.0"/>
-  <arg name="ns" default="/ft_sensor"/>
+  <arg name="ns" default="/yumi/"/>
   <arg name="gripper_com_child_frame_id" default="optodaq_r_sensor_link_com"/>
+  <arg name="topic_ft_zeroed" default="optodaq_l_zeroed"/>
+  <arg name="topic_ft_compensated" default="optodaq_l_compensated"/>
 
   <node name="$(arg node_name)" pkg="gravity_compensation" type="gravity_compensation_node" cwd="node" respawn="false" output="screen">
     <rosparam command="load" file="$(arg calib_data_file)"/>
@@ -15,6 +17,8 @@
     <remap from="$(arg node_name)/imu" to="$(arg imu)" />
     <param name="loop_rate" value="$(arg loop_rate)" />
     <param name="ns" value="$(arg ns)"/>
+    <param name="topic_ft_zeroed" value="$(arg topic_ft_zeroed)"/>
+    <param name="topic_ft_compensated" value="$(arg topic_ft_compensated)"/>
     <param name="gripper_com_child_frame_id" value="$(arg gripper_com_child_frame_id)"/>
   </node>
 
