@@ -50,6 +50,7 @@ class GravityCompensationNode
 public:
 	ros::NodeHandle nh;
 
+
 	// subscribe to accelerometer (imu) readings
 	ros::Subscriber topicSub_imu_;
 	ros::Subscriber topicSub_ft_raw_;
@@ -219,7 +220,8 @@ public:
 				(double)gripper_com_pose(5));
 
 		gripper_com = tf::StampedTransform(tf::Transform(q, p),
-				ros::Time(0),
+				ros::Time::now(),
+				// ros::Time(0),
 				gripper_com_frame_id,
 				gripper_com_child_frame_id);
 
@@ -248,15 +250,16 @@ public:
 
 		if(!m_received_imu)
 		{
-			ROS_ERROR("Haven't received IMU reading");
 			return;
 		}
 
-		if((ros::Time(0)-m_imu.header.stamp).toSec() > 0.1)
+		if((ros::Time::now()-m_imu.header.stamp).toSec() > 0.1)
 		{
 			error_msg_count++;
 			if(error_msg_count % 10==0)
+			{
 				ROS_ERROR("Imu reading too old, not able to g-compensate ft measurement");
+			}
 			return;
 		}
 
@@ -278,8 +281,9 @@ public:
 			while(ros::ok())
 			{
 				tf::StampedTransform gripper_com = m_g_comp_params->getGripperCOM();
-				gripper_com.stamp_ = ros::Time(0);
-				tf_br_.sendTransform(gripper_com);
+				gripper_com.stamp_ = ros::Time::now();
+				// gripper_com.stamp_ = ros::Time(0);
+				// tf_br_.sendTransform(gripper_com);
 
 				gripper_com_broadcast_rate.sleep();
 			}
