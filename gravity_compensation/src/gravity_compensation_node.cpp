@@ -253,8 +253,10 @@ public:
 			return;
 		}
 
-		if((ros::Time::now()-m_imu.header.stamp).toSec() > 0.1)
+		if((ros::Time::now()-m_imu.header.stamp).toSec() > 2.0)		// Temporary fix
+		// if((ros::Time::now()-m_imu.header.stamp).toSec() > 0.1)
 		{
+			ROS_ERROR("%f", (ros::Time::now()-m_imu.header.stamp).toSec());
 			error_msg_count++;
 			if(error_msg_count % 10==0)
 			{
