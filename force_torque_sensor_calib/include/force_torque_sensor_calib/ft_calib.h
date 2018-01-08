@@ -13,9 +13,11 @@
  *  Created on: Sep 26, 2012
  *  Authors:   Francisco Viña
  *            fevb <at> kth.se
+ *
+ *  Modified on October 11 2017 with recursive instrumental variables by Diogo Almeida (diogoa <at> kth.se)
  */
 
-/* Copyright (c) 2012, Francisco Viña, CVAP, KTH
+/* Copyright (c) 2012, Francisco Viña, CVAP (RPL), KTH
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -81,15 +83,11 @@ public:
 
 protected:
 
-	Eigen::MatrixXd H; // stacked measurement matrices
-	Eigen::VectorXd Z; // stacked F/T measurements
-	// FT_sensor_frame_acc taken as 0
-
-	unsigned int m_num_meas; // number of stacked measurements;
+  Eigen::Matrix<double, 10, 1> phi;
 
 	// measurement matrix based on "On-line Rigid Object Recognition and Pose Estimation
 	//  Based on Inertial Parameters", D. Kubus, T. Kroger, F. Wahl, IROS 2008
-    virtual Eigen::MatrixXd getMeasurementMatrix(const geometry_msgs::Vector3Stamped &gravity);
+    virtual Eigen::MatrixXd getMeasurementMatrix(const geometry_msgs::Vector3Stamped &gravity_geo);
 
 };
 }
