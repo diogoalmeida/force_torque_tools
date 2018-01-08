@@ -1,5 +1,6 @@
 /*
  *  gravity_compensationhnode.cpp
+
  *
  *  Created on: Nov 12, 2013
  *  Authors:   Francisco Viña
@@ -253,7 +254,7 @@ public:
 			return;
 		}
 
-		if((ros::Time::now()-m_imu.header.stamp).toSec() > 2.0)		// Temporary fix
+		/*if((ros::Time::now()-m_imu.header.stamp).toSec() > 2.0)		// Temporary fix
 		// if((ros::Time::now()-m_imu.header.stamp).toSec() > 0.1)
 		{
 			ROS_ERROR("%f", (ros::Time::now()-m_imu.header.stamp).toSec());
@@ -263,7 +264,7 @@ public:
 				ROS_ERROR("Imu reading too old, not able to g-compensate ft measurement");
 			}
 			return;
-		}
+		}*/
 
 		geometry_msgs::WrenchStamped ft_zeroed;
 		m_g_comp->Zero(*msg, ft_zeroed);
