@@ -1,5 +1,5 @@
 /*
- *  gravity_compensationhnode.cpp
+ *  gravity_compensation_node.cpp
 
  *
  *  Created on: Nov 12, 2013
@@ -50,7 +50,7 @@
 class GravityCompensationNode
 {
 public:
-	ros::NodeHandle nh;
+	ros::NodeHandle nh_;
 
 
 	// subscribe to accelerometer (imu) readings
@@ -67,7 +67,7 @@ public:
 
 	GravityCompensationNode()
 	{
-		nh = ros::NodeHandle("~");
+		nh_ = ros::NodeHandle("~");
 		m_g_comp_params  = new GravityCompensationParams();
 		m_g_comp = NULL;
 		m_received_imu = false;
@@ -76,28 +76,28 @@ public:
     m_ft_bias = Eigen::Matrix<double, 6, 1>::Zero();
 
 		// subscribe to accelerometer topic and raw F/T sensor topic
-		topicSub_imu_ = nh.subscribe("imu", 1, &GravityCompensationNode::topicCallback_imu, this);
-		topicSub_ft_raw_ = nh.subscribe("ft_raw", 1, &GravityCompensationNode::topicCallback_ft_raw, this);
+		topicSub_imu_ = nh_.subscribe("imu", 1, &GravityCompensationNode::topicCallback_imu, this);
+		topicSub_ft_raw_ = nh_.subscribe("ft_raw", 1, &GravityCompensationNode::topicCallback_ft_raw, this);
 
 		std::string topic_ft_zeroed, topic_ft_compensated;
-		nh.param("topic_ft_zeroed", topic_ft_zeroed, std::string("ft_zeroed"));
-		nh.param("topic_ft_compensated", topic_ft_compensated, std::string("ft_compensated"));
+		nh_.param("topic_ft_zeroed", topic_ft_zeroed, std::string("ft_zeroed"));
+		nh_.param("topic_ft_compensated", topic_ft_compensated, std::string("ft_compensated"));
 
     // bias calibration service
-    calibrate_bias_srv_server_ = n_.advertiseService("calibrate_bias", &GravityCompensationNode::calibrateBiasSrvCallback, this);
+    calibrate_bias_srv_server_ = nh_.advertiseService("calibrate_bias", &GravityCompensationNode::calibrateBiasSrvCallback, this);
 
 		/// implementation of topics to publish
 		std::string ns;
-		if(nh.hasParam("ns"))
+		if(nh_.hasParam("ns"))
 		{
-			nh.getParam("ns", ns);
-			topicPub_ft_zeroed_ = nh.advertise<geometry_msgs::WrenchStamped> (ns+topic_ft_zeroed, 1);
-			topicPub_ft_compensated_ = nh.advertise<geometry_msgs::WrenchStamped> (ns+topic_ft_compensated, 1);
+			nh_.getParam("ns", ns);
+			topicPub_ft_zeroed_ = nh_.advertise<geometry_msgs::WrenchStamped> (ns+topic_ft_zeroed, 1);
+			topicPub_ft_compensated_ = nh_.advertise<geometry_msgs::WrenchStamped> (ns+topic_ft_compensated, 1);
 		}
 		else
 		{
-			topicPub_ft_zeroed_ = nh.advertise<geometry_msgs::WrenchStamped> (topic_ft_zeroed, 1);
-			topicPub_ft_compensated_ = nh.advertise<geometry_msgs::WrenchStamped> (topic_ft_compensated, 1);
+			topicPub_ft_zeroed_ = nh_.advertise<geometry_msgs::WrenchStamped> (topic_ft_zeroed, 1);
+			topicPub_ft_compensated_ = nh_.advertise<geometry_msgs::WrenchStamped> (topic_ft_compensated, 1);
 		}
 	}
 
@@ -112,15 +112,15 @@ public:
 		/// Get F/T sensor bias
 		XmlRpc::XmlRpcValue biasXmlRpc;
 		Eigen::Matrix<double, 6, 1> bias;
-		if (nh.hasParam("bias"))
+		if (nh_.hasParam("bias"))
 		{
-			nh.getParam("bias", biasXmlRpc);
+			nh_.getParam("bias", biasXmlRpc);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'bias' not set, shutting down node...");
-			nh.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
@@ -128,7 +128,7 @@ public:
 		if(biasXmlRpc.size()!=6)
 		{
 			ROS_ERROR("Invalid F/T bias parameter size (should be size 6), shutting down node");
-			nh.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
@@ -140,22 +140,22 @@ public:
 
 		// get the mass of the gripper
 		double gripper_mass;
-		if (nh.hasParam("gripper_mass"))
+		if (nh_.hasParam("gripper_mass"))
 		{
-			nh.getParam("gripper_mass", gripper_mass);
+			nh_.getParam("gripper_mass", gripper_mass);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_mass' not available");
-			nh.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
 		if(gripper_mass<0.0)
 		{
 			ROS_ERROR("Parameter 'gripper_mass' < 0");
-			nh.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
@@ -164,15 +164,15 @@ public:
 		// first get the frame ID
 		tf::StampedTransform gripper_com;
 		std::string gripper_com_frame_id;
-		if (nh.hasParam("gripper_com_frame_id"))
+		if (nh_.hasParam("gripper_com_frame_id"))
 		{
-			nh.getParam("gripper_com_frame_id", gripper_com_frame_id);
+			nh_.getParam("gripper_com_frame_id", gripper_com_frame_id);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_com_frame_id' not available");
-			nh.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
@@ -180,21 +180,21 @@ public:
 
 		// now get the CHILD frame ID
 		std::string gripper_com_child_frame_id;
-		if (nh.hasParam("gripper_com_child_frame_id"))
+		if (nh_.hasParam("gripper_com_child_frame_id"))
 		{
-			nh.getParam("gripper_com_child_frame_id", gripper_com_child_frame_id);
+			nh_.getParam("gripper_com_child_frame_id", gripper_com_child_frame_id);
 		}
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_com_child_frame_id' not available");
-			nh.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
-		if(!n_.getParam("ft_frame_id", m_ft_frame_id))
+		if(!nh_.getParam("ft_frame_id", m_ft_frame_id))
 		{
 			ROS_ERROR("Parameter ft_frame_id not availabel, shutting down...");
-			n_.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
@@ -203,15 +203,15 @@ public:
 		// now get the actual gripper COM pose
 		Eigen::Matrix<double, 6, 1> gripper_com_pose;
 		XmlRpc::XmlRpcValue gripper_com_pose_XmlRpc;
-		if (nh.hasParam("gripper_com_pose"))
+		if (nh_.hasParam("gripper_com_pose"))
 		{
-			nh.getParam("gripper_com_pose", gripper_com_pose_XmlRpc);
+			nh_.getParam("gripper_com_pose", gripper_com_pose_XmlRpc);
 		}
 
 		else
 		{
 			ROS_ERROR("Parameter 'gripper_com_pose' not set, shutting down node...");
-			nh.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
@@ -219,7 +219,7 @@ public:
 		if(gripper_com_pose_XmlRpc.size()!=6)
 		{
 			ROS_ERROR("Invalid 'gripper_com_pose' parameter size (should be size 6), shutting down node");
-			nh.shutdown();
+			nh_.shutdown();
 			return false;
 		}
 
@@ -243,7 +243,7 @@ public:
 
 		// get the publish frequency for the gripper
 		// center of mass tf
-		nh.param("gripper_com_broadcast_frequency",
+		nh_.param("gripper_com_broadcast_frequency",
 				m_gripper_com_broadcast_frequency, 100.0);
 
 		m_g_comp_params->setBias(bias);
@@ -379,7 +379,7 @@ int main(int argc, char **argv)
 
 	// loop frequency
 	double loop_rate_;
-	g_comp_node.nh.param("loop_rate", loop_rate_, 1000.0);
+	g_comp_node.nh_.param("loop_rate", loop_rate_, 1000.0);
 	ros::Rate loop_rate(loop_rate_);
 
 	// add a thread for publishing the gripper COM transform frame
