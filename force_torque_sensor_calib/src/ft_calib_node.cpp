@@ -165,8 +165,7 @@ public:
 
 				if(!n_.getParam("ft_sensor_frame_id", m_ft_sensor_frame_id))
 				{
-					ROS_ERROR("No ft_sensor_frame_id parameter, shutting down node ...");
-					n_.shutdown();
+					ROS_WARN("No ft_sensor_frame_id parameter ...");
 					return false;
 				}
 
@@ -437,7 +436,13 @@ public:
 	{
 		ROS_DEBUG("In ft sensorcallback");
 		m_ft_raw = *msg;
-		m_ft_raw.header.frame_id = m_ft_sensor_frame_id;
+
+		// check if msg has a frame id
+		if (m_ft_raw.header.frame_id.empty())
+		{
+			m_ft_raw.header.frame_id = m_ft_sensor_frame_id;
+		}
+
 		m_received_ft = true;
 	}
 
