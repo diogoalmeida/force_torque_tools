@@ -166,7 +166,6 @@ public:
 				if(!n_.getParam("ft_sensor_frame_id", m_ft_sensor_frame_id))
 				{
 					ROS_WARN("No ft_sensor_frame_id parameter ...");
-					return false;
 				}
 
 				if(n_.hasParam("poses_frame_id"))
