@@ -10,6 +10,7 @@
   <arg name="gripper_com_child_frame_id" default="optodaq_l_sensor_link_com"/>
   <arg name="topic_ft_zeroed" default="optodaq_l_zeroed"/>
   <arg name="topic_ft_compensated" default="optodaq_l_compensated"/>
+  <arg name="ft_frame_id" default="optodaq_l_sensor_link"/>
 
   <node name="$(arg node_name)" pkg="gravity_compensation" type="gravity_compensation_node" cwd="node" respawn="false" output="screen">
     <rosparam command="load" file="$(arg calib_data_file)"/>
@@ -20,6 +21,7 @@
     <param name="topic_ft_zeroed" value="$(arg topic_ft_zeroed)"/>
     <param name="topic_ft_compensated" value="$(arg topic_ft_compensated)"/>
     <param name="gripper_com_child_frame_id" value="$(arg gripper_com_child_frame_id)"/>
+    <param name="ft_frame_id" value="$(arg ft_frame_id)"/>
   </node>
 
 </launch>

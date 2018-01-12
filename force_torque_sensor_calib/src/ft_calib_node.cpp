@@ -153,20 +153,25 @@ public:
 
         // Get the name of directory to save gravity and force-torque measurements
         if(n_.hasParam("meas_file_dir"))
-		{
-            n_.getParam("meas_file_dir", m_meas_file_dir);
-		}
+				{
+		            n_.getParam("meas_file_dir", m_meas_file_dir);
+				}
 
-		else
-		{
-            ROS_WARN("No meas_file_dir parameter, setting to default '~/.ros/ft_calib' ");
-            m_meas_file_dir = std::string("~/.ros/ft_calib");
-		}
+				else
+				{
+		            ROS_WARN("No meas_file_dir parameter, setting to default '~/.ros/ft_calib' ");
+		            m_meas_file_dir = std::string("~/.ros/ft_calib");
+				}
 
-		if(n_.hasParam("poses_frame_id"))
-		{
-			n_.getParam("poses_frame_id", m_poses_frame_id);
-		}
+				if(!n_.getParam("ft_sensor_frame_id", m_ft_sensor_frame_id))
+				{
+					ROS_WARN("No ft_sensor_frame_id parameter ...");
+				}
+
+				if(n_.hasParam("poses_frame_id"))
+				{
+					n_.getParam("poses_frame_id", m_poses_frame_id);
+				}
 
         else
         {
@@ -178,7 +183,7 @@ public:
 
         // whether the user wants to use random poses
 		// n_.param("random_poses", m_random_poses, false);
-		
+
 		// operation mode
 		n_.param("operation_mode", op_mode, MANUAL_POSITIONING);
 
@@ -293,14 +298,14 @@ public:
 				pose(5) = 0;
 
 				q.setRPY((double)pose(3), (double)pose(4), (double)pose(5));
-	
+
 				tf::quaternionTFToMsg(q, pose_.orientation);
-	
+
 				geometry_msgs::PoseStamped pose_stamped;
 				pose_stamped.pose = pose_;
 				pose_stamped.header.frame_id = m_poses_frame_id;
 				pose_stamped.header.stamp = ros::Time(0);
-	
+
 				m_group->setPoseTarget(pose_stamped);
 
 				// m_group->setRandomTarget();
@@ -430,6 +435,13 @@ public:
 	{
 		ROS_DEBUG("In ft sensorcallback");
 		m_ft_raw = *msg;
+
+		// check if msg has a frame id
+		if (m_ft_raw.header.frame_id.empty())
+		{
+			m_ft_raw.header.frame_id = m_ft_sensor_frame_id;
+		}
+
 		m_received_ft = true;
 	}
 
@@ -518,6 +530,13 @@ public:
 		t_bias(1) = -ft_calib(8);
 		t_bias(2) = -ft_calib(9);
 
+    // f_bias(0) = 0;
+		// f_bias(1) = 0;
+		// f_bias(2) = 0;
+		// t_bias(0) = 0;
+		// t_bias(1) = 0;
+		// t_bias(2) = 0;
+
 	}
 
 	void averageFTMeas()
@@ -581,15 +600,18 @@ private:
 	// default: ~/.ros/ft_calib
 	std::string m_calib_file_dir;
 
-    // name of file with recorded gravity and F/T measurements
-    std::string m_meas_file_name;
+  // name of file with recorded gravity and F/T measurements
+  std::string m_meas_file_name;
 
-    // name of directory for saving gravity and F/T measurements
-    // default: ~/.ros/ft_calib
-    std::string m_meas_file_dir;
+  // name of directory for saving gravity and F/T measurements
+  // default: ~/.ros/ft_calib
+  std::string m_meas_file_dir;
 
 	// frame id of the poses to be executed
 	std::string m_poses_frame_id;
+
+	// frame of the force torque measurements
+	std::string m_ft_sensor_frame_id;
 
 	// if the user wants to execute just random poses
 	// default: false
@@ -643,10 +665,9 @@ int main(int argc, char **argv)
 		if(!ret)
 		{
 			ret = ft_calib_node.moveNextPose();
-			t_end_move_arm = ros::Time(0);
+			t_end_move_arm = ros::Time::now();
 			sleep(wait_time);
 		}
-
 		// average 100 measurements to calibrate the sensor in each position
 		else if ((ros::Time::now() - t_end_move_arm).toSec() > wait_time)
 		{
