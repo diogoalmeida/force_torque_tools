@@ -19,7 +19,7 @@ meas_file_name: 'l_ft_calib_meas.txt'
 # Name of the directory
 meas_file_dir: '~/.ros/ft_calib'
 
-# operation mode. 1 for predefined poses, 2 for random poses, 
+# operation mode. 1 for predefined poses, 2 for random poses,
 # and 3 for manual position of the end effector
 operation_mode: 2
 
@@ -31,4 +31,6 @@ number_random_poses: 30
 # poses_frame_id sets the frame at which the poses are expressed
 poses_frame_id: 'yumi_base_link'
 
-pose_base: [0.5, 0.15, 0.3, 0.0, 0.0, 0.0]
+pose_base: [0.5, 0.40, 0.3, 0.0, 0.0, 0.0]
+
+cone_angle: 0.5
