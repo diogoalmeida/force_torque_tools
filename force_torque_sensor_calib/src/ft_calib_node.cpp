@@ -291,47 +291,57 @@ public:
 				tf::Quaternion q;
 				std::random_device rd;  //Will be used to obtain a seed for the random number engine
 				std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-				std::uniform_real_distribution<> dis(-PI/3, PI/3);
-				pose(3) = dis(gen);
-				dis = std::uniform_real_distribution<>(-PI, PI);
-				pose(4) = dis(gen);
-				pose(5) = 0;
+				std::uniform_real_distribution<> angle_dist(0, 2*PI), coord_dist(cos(m_cone_angle), 1), rot_dist(0, 2*PI);
+				tfScalar coord, phi, rot;
 
-				q.setRPY((double)pose(3), (double)pose(4), (double)pose(5));
+				coord = coord_dist(gen);
+				phi = angle_dist(gen);
+				rot = rot_dist(gen);
 
+				geometry_msgs::PoseStamped current_pose = m_group->getCurrentPose();
+				tf::Vector3 direction(coord, sqrt(1 - coord*coord)*cos(phi), sqrt(1 - coord*coord)*sin(phi)); // Direction we want to point to
+				tf::Vector3 base_direction(0, 0, 1); // Base
+				tf::Vector3 diff_v = base_direction.cross(direction);
+				tfScalar diff_rot = 1 + base_direction.dot(direction);
+				tf::Quaternion q_init(diff_v.x(), diff_v.y(), diff_v.z(), diff_rot);
+				tf::Quaternion q_post(0, 0, 1, rot);
+				q_post.normalize();
+				q_init.normalize();
+
+				q.setRotation(direction, 0);
+				q.normalize();
+				q = q_init*q*q_post;
 				tf::quaternionTFToMsg(q, pose_.orientation);
 
 				geometry_msgs::PoseStamped pose_stamped;
-				pose_stamped.pose = pose_;
-				pose_stamped.header.frame_id = m_poses_frame_id;
-				pose_stamped.header.stamp = ros::Time(0);
+        pose_stamped.pose = pose_;
+        pose_stamped.header.frame_id = m_poses_frame_id;
+        pose_stamped.header.stamp = ros::Time(0);
 
-				m_group->setPoseTarget(pose_stamped);
+        m_group->setPoseTarget(pose_stamped);
 
-				// m_group->setRandomTarget();
-				ROS_INFO("Executing pose %d",m_pose_counter);
-			}
-			else
-			{
-				ROS_INFO("Finished group %s random poses", m_group->getName().c_str());
-				m_finished = true;
+        // m_group->setRandomTarget();
+        ROS_INFO("Executing pose %d",m_pose_counter);
+      // }
+      // else
+      // {
+
+				// else
+				// {
+				// 	ROS_INFO("MANUAL_POSITIONING");
+				// 	ROS_INFO("Finished group %s manually set poses", m_group->getName().c_str());
+				// 	m_finished = true;
+				// 	return true;
+				// }
+
+				ROS_INFO("EE goal position = (%f, %f, %f)", pose(0), pose(1), pose(2));
+				ROS_INFO("EE goal orientation = (%f, %f, %f) + %f", direction.x(), direction.y(), direction.z(), rot);
+				m_pose_counter++;
+				m_group->move();
+				ROS_INFO("Finished executing pose %d", m_pose_counter-1);
 				return true;
 			}
 		}
-		// else
-		// {
-		// 	ROS_INFO("MANUAL_POSITIONING");
-		// 	ROS_INFO("Finished group %s manually set poses", m_group->getName().c_str());
-		// 	m_finished = true;
-		// 	return true;
-		// }
-
-		ROS_INFO("EE goal position = (%f, %f, %f)", pose(0), pose(1), pose(2));
-		ROS_INFO("EE goal orientation = (%f, %f, %f)", pose(3), pose(4), pose(5));
-		m_pose_counter++;
-		m_group->move();
-		ROS_INFO("Finished executing pose %d", m_pose_counter-1);
-		return true;
 	}
 
 	// gets the next pose from the parameter server
@@ -576,6 +586,9 @@ private:
 
 	bool m_received_ft;
 	bool m_received_imu;
+
+	// angle limits
+	double m_cone_angle;
 
 	// ft calib stuff
 	FTCalib *m_ft_calib;
