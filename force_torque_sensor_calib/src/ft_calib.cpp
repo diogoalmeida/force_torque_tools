@@ -43,7 +43,7 @@ namespace Calibration{
 
 FTCalib::FTCalib()
 {
-  phi = Eigen::Matrix<double, 10, 1>::Zero();
+  m_num_meas = 0;
 }
 
 FTCalib::~FTCalib(){}
@@ -58,11 +58,10 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 		return;
 	}
 
-  Eigen::MatrixXd H = getMeasurementMatrix(gravity);
-  Eigen::Matrix<double, 10, 6> K;
-  Eigen::Matrix<double, 6, 6> S, I_six = Eigen::Matrix<double, 6, 6>::Identity();
-  Eigen::Matrix<double, 10, 10> P_hat, I_ten = Eigen::Matrix<double, 10, 10>::Identity();
-	Eigen::VectorXd z = Eigen::Matrix<double, 6, 1>::Zero(), innov;
+  m_num_meas++;
+
+  Eigen::MatrixXd h = getMeasurementMatrix(gravity);
+  Eigen::VectorXd z = Eigen::Matrix<double, 6, 1>::Zero();
 	z(0) = ft_raw.wrench.force.x;
 	z(1) = ft_raw.wrench.force.y;
 	z(2) = ft_raw.wrench.force.z;
@@ -71,49 +70,114 @@ void FTCalib::addMeasurement(const geometry_msgs::Vector3Stamped &gravity,
 	z(4) = ft_raw.wrench.torque.y;
 	z(5) = ft_raw.wrench.torque.z;
 
+  if (m_num_meas == 1)
+  {
+    H = h;
+    Z = z;
+  }
+  else
+  {
+    Eigen::MatrixXd H_temp = H;
+    Eigen::VectorXd Z_temp = Z;
 
-  // process model
-  P_hat = 0.01*I_ten;
-  innov = z - H*phi;
-  S = H*P_hat*H.transpose() + 10*I_six;
+    H.resize(m_num_meas*6, 10);
+    Z.resize(m_num_meas*6);
 
-  K = P_hat*H.transpose()*S.colPivHouseholderQr().solve(I_six);
-  phi = phi + K*innov;
+    H.topRows((m_num_meas-1)*6) = H_temp;
+    Z.topRows((m_num_meas-1)*6) = Z_temp;
 
-  std::cout << "---------------------------------" << std::endl;
-  std::cout << "z: " << z.transpose() << std::endl;
-  std::cout << "phi: " << phi.transpose() << std::endl;
-  std::cout << "S: " << std::endl << S << std::endl;
-  std::cout << "K: " << std::endl << K << std::endl;
-  std::cout << "---------------------------------" << std::endl;
+    H.bottomRows(6) = h;
+    Z.bottomRows(6) = z;
+  }
 }
 
 
 // Least squares to estimate the FT sensor parameters
 Eigen::VectorXd FTCalib::getCalib()
 {
-	return phi;
+  Eigen::VectorXd ft_calib_params(10);
+
+  ft_calib_params = H.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(Z);
+
+	return ft_calib_params;
 }
 
 
-Eigen::MatrixXd FTCalib::getMeasurementMatrix(const geometry_msgs::Vector3Stamped &gravity_geo)
+Eigen::MatrixXd FTCalib::getMeasurementMatrix(const geometry_msgs::Vector3Stamped &gravity)
 {
-  Eigen::Vector3d gravity;
+  KDL::Vector w = KDL::Vector::Zero();
+  KDL::Vector alpha = KDL::Vector::Zero();
+  KDL::Vector a = KDL::Vector::Zero();
+
+  KDL::Vector g(gravity.vector.x, gravity.vector.y, gravity.vector.z);
 
 	Eigen::MatrixXd H;
 	H = Eigen::Matrix<double, 6, 10>::Zero();
 
-  gravity << gravity_geo.vector.x, gravity_geo.vector.y, gravity_geo.vector.z;
+  for (unsigned int i = 0; i < 3; i++)
+  {
+    for (unsigned int j = 4; j < 10; j++)
+    {
+      if (i == j - 4)
+      {
+        H(i, j) = 1.0;
+      }
+      else
+      {
+        H(i, j) = 0.0;
+      }
+    }
+  }
 
-  H.block<3,1>(0,0) = -gravity;
-  H.block<3,3>(3,1) << 0, -gravity[2], gravity[1],
-                       gravity[2], 0, -gravity[0],
-                       -gravity[1], gravity[0], 0;
+  for (unsigned int i = 3; i < 6; i++)
+  {
+    H(i, 0) = 0.0;
+  }
 
-	H.block<6,6>(0,4) = Eigen::Matrix<double, 6, 6>::Identity();
+  H(3, 1) = 0.0;
+  H(4, 2) = 0.0;
+  H(5, 3) = 0.0;
 
-  std::cout << "Measurement Matrix" << std::endl;
-  std::cout << H << "    Transpose:" << H.transpose() << std::endl << std::endl;
+  for (unsigned int i = 0; i < 3; i++)
+  {
+    H(i, 0) = a(i) - g(i);
+  }
+
+  H(0, 1) = -w(1)*w(1) - w(2)*w(2);
+  H(0, 2) = w(0)*w(1) - alpha(2);
+  H(0, 3) = w(0)*w(2) + alpha(1);
+
+  H(1, 1) = w(0)*w(1) + alpha(2);
+  H(1, 2) = -w(0)*w(0) - w(2)*w(2);
+  H(1, 3) = w(1)*w(2) - alpha(0);
+
+  H(2, 1) = w(0)*w(2) - alpha(1);
+  H(2, 2) = w(1)*w(2) + alpha(0);
+  H(2, 3) = -w(1)*w(1) - w(0)*w(0);
+
+  H(3, 2) = a(2) - g(2);
+  H(3, 3) = -a(1) + g(1);
+
+  H(4, 1) = -a(2) + g(2);
+  H(4, 3) = a(0) - g(0);
+
+  H(5, 1) = a(1) - g(1);
+  H(5, 2) = -a(0) + g(0);
+
+  for (unsigned int i = 3; i < 6; i++)
+  {
+    for (unsigned int j = 4; j < 10; j++)
+    {
+      if (i == (j - 4))
+      {
+        H(i, j) = 1.0;
+      }
+      else
+      {
+        H(i, j) = 0.0;
+      }
+    }
+  }
 
 	return H;
 }

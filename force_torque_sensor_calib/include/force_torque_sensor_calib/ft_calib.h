@@ -83,11 +83,14 @@ public:
 
 protected:
 
-  Eigen::Matrix<double, 10, 1> phi;
+	Eigen::MatrixXd H; // stacked measurement matrices
+	Eigen::VectorXd Z; // stacked F/T measurements
+	// FT_sensor_frame_acc taken as 0
+  unsigned int m_num_meas; // number of stacked measurements
 
 	// measurement matrix based on "On-line Rigid Object Recognition and Pose Estimation
 	//  Based on Inertial Parameters", D. Kubus, T. Kroger, F. Wahl, IROS 2008
-    virtual Eigen::MatrixXd getMeasurementMatrix(const geometry_msgs::Vector3Stamped &gravity_geo);
+    virtual Eigen::MatrixXd getMeasurementMatrix(const geometry_msgs::Vector3Stamped &gravity);
 
 };
 }
