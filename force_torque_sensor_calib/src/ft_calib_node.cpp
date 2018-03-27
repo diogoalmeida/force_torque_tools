@@ -230,6 +230,9 @@ public:
 	void init()
 	{
 		m_group = new moveit::planning_interface::MoveGroupInterface(m_moveit_group_name);
+		m_group->setMaxVelocityScalingFactor(0.05);
+		m_group->setMaxAccelerationScalingFactor(0.1);
+		// m_group->setGoalJointTolerance (0.05);
 	}
 
 
@@ -269,6 +272,7 @@ public:
 			pose_stamped.header.frame_id = m_poses_frame_id;
 			pose_stamped.header.stamp = ros::Time(0);
 
+			m_group->setStartStateToCurrentState();
 			m_group->setPoseTarget(pose_stamped);
 
 		}
@@ -340,6 +344,7 @@ public:
 				ROS_INFO("EE goal orientation = (%f, %f, %f) + %f", direction.x(), direction.y(), direction.z(), rot);
 				m_pose_counter++;
 				m_group->move();
+				// ros::Duration(15).sleep();
 				ROS_INFO("Finished executing pose %d", m_pose_counter-1);
 				return true;
 			}
@@ -649,6 +654,7 @@ int main(int argc, char **argv)
 {
 	ros::init (argc, argv, "ft_calib_node");
 	ros::NodeHandle nh;
+	ros::AsyncSpinner spinner(4);
 
 	FTCalibNode ft_calib_node;
 	if(!ft_calib_node.getROSParameters())
@@ -672,6 +678,7 @@ int main(int argc, char **argv)
 	unsigned int n_measurements = 0;
 
 	ros::Time t_end_move_arm = ros::Time(0);
+	spinner.start();
 
 	while (ft_calib_node.n_.ok() && !ft_calib_node.finished())
 	{
@@ -725,7 +732,6 @@ int main(int argc, char **argv)
 		}
 
 
-		ros::spinOnce();
 		loop_rate.sleep();
 	}
 
