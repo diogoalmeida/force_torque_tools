@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find gravity_compensation)/launch/yumi_left_arm_gravity_compensation.launch"/>
+  <include file="$(find gravity_compensation)/launch/yumi_right_arm_gravity_compensation.launch"/>
+</launch>
